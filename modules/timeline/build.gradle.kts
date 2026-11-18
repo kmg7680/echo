@@ -17,4 +17,11 @@ dependencies {
 
     // @Service 용 (Spring Web 없음)
     implementation("org.springframework:spring-context")
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

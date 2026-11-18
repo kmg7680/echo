@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/run-module-tests.sh",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -r -f *)",
+      "Bash(rm -f -r *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)"
+    ],
+    "ask": [
+      "Bash(git push)",
+      "Bash(git push *)",
+      "Bash(psql)",
+      "Bash(psql *)",
+      "Bash(docker)",
+      "Bash(docker *)"
+    ],
+    "allow": [
+      "Bash(./gradlew build)",
+      "Bash(./gradlew build *)",
+      "Bash(./gradlew test)",
+      "Bash(./gradlew test *)",
+      "Bash(./gradlew bootRun)",
+      "Bash(./gradlew bootRun *)",
+      "Bash(./gradlew :apps:customer-api:bootRun)",
+      "Bash(./gradlew :apps:customer-api:bootRun *)",
+      "Bash(./gradlew :apps:customer-api:test)",
+      "Bash(./gradlew :apps:customer-api:test *)",
+      "Bash(./gradlew :modules:user:test)",
+      "Bash(./gradlew :modules:user:test *)",
+      "Bash(./gradlew :modules:post:test)",
+      "Bash(./gradlew :modules:post:test *)",
+      "Bash(./gradlew :modules:timeline:test)",
+      "Bash(./gradlew :modules:timeline:test *)"
+    ]
+  }
+}

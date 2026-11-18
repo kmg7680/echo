@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Post 도메인 엔티티. Echo 서비스의 글(텍스트 한 조각).
+ * Post 도메인 엔티티. Echo 서비스의 글.
  * 내용(content)은 280자를 초과할 수 없다 — 도메인 불변식.
  */
 @Entity

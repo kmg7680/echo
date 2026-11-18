@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 16px; background: #fafafa; color: #111; }
+  h1 { font-size: 1.4rem; }
+  .box, .post { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  textarea { width: 100%; box-sizing: border-box; height: 80px; resize: vertical; font: inherit; }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  #counter.over { color: #d00; font-weight: bold; }
+  button { padding: 6px 16px; cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  .meta { color: #777; font-size: .8rem; margin-bottom: 4px; }
+  .content { white-space: pre-wrap; word-break: break-word; }
+  #error { color: #d00; font-size: .9rem; }
+</style>
+</head>
+<body>
+<h1>Echo</h1>
+
+<div class="box">
+  <textarea id="content" placeholder="무슨 생각을 하고 있나요?"></textarea>
+  <div class="row">
+    <span><span id="counter">0 / 280</span> <span id="error"></span></span>
+    <button id="submit" disabled>게시</button>
+  </div>
+</div>
+
+<h2 style="font-size:1.1rem">타임라인</h2>
+<div id="timeline"></div>
+
+<script>
+const MAX = 280;
+const $content = document.getElementById('content');
+const $counter = document.getElementById('counter');
+const $submit = document.getElementById('submit');
+const $error = document.getElementById('error');
+const $timeline = document.getElementById('timeline');
+
+function updateCounter() {
+  const len = [...$content.value].length;
+  $counter.textContent = `${len} / ${MAX}`;
+  $counter.classList.toggle('over', len > MAX);
+  $submit.disabled = len === 0 || len > MAX || !$content.value.trim();
+}
+
+function render(entries) {
+  $timeline.replaceChildren();
+  if (!entries.length) {
+    $timeline.textContent = '아직 글이 없습니다.';
+    return;
+  }
+  // 최신순 보장 (서버도 최신순이지만 클라이언트에서 한 번 더 정렬)
+  [...entries].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'post';
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = `#${e.postId} · 작성자 ${e.authorId} · ${new Date(e.createdAt).toLocaleString()}`;
+    const body = document.createElement('div');
+    body.className = 'content';
+    body.textContent = e.content; // textContent로 XSS 방지
+    div.append(meta, body);
+    $timeline.append(div);
+  });
+}
+
+async function loadTimeline() {
+  try {
+    const res = await fetch('/timeline');
+    const json = await res.json();
+    render(json.data ?? []);
+  } catch (e) {
+    $timeline.textContent = '타임라인을 불러오지 못했습니다.';
+  }
+}
+
+async function submitPost() {
+  $error.textContent = '';
+  $submit.disabled = true;
+  try {
+    const res = await fetch('/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: $content.value }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || '작성 실패');
+    $content.value = '';
+    await loadTimeline();
+  } catch (e) {
+    $error.textContent = e.message;
+  } finally {
+    updateCounter();
+  }
+}
+
+$content.addEventListener('input', updateCounter);
+$submit.addEventListener('click', submitPost);
+updateCounter();
+loadTimeline();
+</script>
+</body>
+</html>
