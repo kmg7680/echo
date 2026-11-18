@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,9 +18,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * POST /posts 통합 테스트.
- * Web + JPA + PostgreSQL(Testcontainers) + 크로스-모듈 의존성이 전부 연결되는지 검증한다.
+ * Web + JPA + H2 + 크로스-모듈 의존성이 전부 연결되는지 검증한다.
  */
-class PostIntegrationTest extends AbstractIntegrationTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+class PostIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

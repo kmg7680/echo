@@ -18,5 +18,4 @@ dependencies {
     // JPA (Spring Web 없음)
     implementation("jakarta.persistence:jakarta.persistence-api")
     implementation("jakarta.validation:jakarta.validation-api")
-    implementation("org.springframework.data:spring-data-jpa")
 }
