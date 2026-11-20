@@ -139,6 +139,19 @@
     .time { color: var(--muted); font-size: 12px; }
     .post-content { white-space: pre-wrap; word-break: break-word; }
 
+    .post-actions { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+    button.like {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    button.like.liked { color: var(--danger); border-color: var(--danger); }
+    .like-err { font-size: 12px; color: var(--danger); }
+
     .empty, .error {
       text-align: center;
       color: var(--muted);
@@ -251,8 +264,14 @@
             <span class="time">${escapeHtml(formatTime(p.createdAt))}</span>
           </div>
           <div class="post-content">${escapeHtml(p.content)}</div>
+          <div class="post-actions" data-post-id="${escapeHtml(String(p.postId))}">
+            <button class="like" type="button">♡ <span class="like-count">0</span></button>
+            <span class="like-err"></span>
+          </div>
         </article>
       `).join("");
+      // 글마다 좋아요 수/상태 반영
+      $feed.querySelectorAll(".post-actions").forEach(refreshLike);
     }
 
     async function loadTimeline() {
@@ -330,6 +349,67 @@
         $unfollowBtn.disabled = false;
       }
     }
+
+    // ── 좋아요 ─────────────────────────────────────────────────────
+    // 서버에 "내가 좋아요했는지" 조회 API가 없어, 브라우저(localStorage)에 (유저, 글) 단위로 기억한다.
+    const likedKey = (postId) => `echo:liked:${$meId.value.trim()}:${postId}`;
+    const isLiked = (postId) => localStorage.getItem(likedKey(postId)) === "1";
+    function setLiked(postId, liked) {
+      if (liked) localStorage.setItem(likedKey(postId), "1");
+      else localStorage.removeItem(likedKey(postId));
+    }
+
+    function paintLike(box, count) {
+      const postId = box.dataset.postId;
+      const liked = isLiked(postId);
+      const btn = box.querySelector(".like");
+      btn.classList.toggle("liked", liked);
+      btn.innerHTML = `${liked ? "♥" : "♡"} <span class="like-count">${count}</span>`;
+      btn.setAttribute("aria-pressed", String(liked));
+    }
+
+    // GET /posts/{id}/likes/count
+    async function refreshLike(box) {
+      try {
+        const data = await unwrap(await fetch(`/posts/${encodeURIComponent(box.dataset.postId)}/likes/count`));
+        paintLike(box, data.count);
+      } catch (e) {
+        box.querySelector(".like-err").textContent = e.message;
+      }
+    }
+
+    // POST(좋아요) / DELETE(취소) /posts/{id}/likes — 주체는 X-User-Id 헤더(내 ID)
+    async function toggleLike(box) {
+      const postId = box.dataset.postId;
+      const me = $meId.value.trim();
+      const $err = box.querySelector(".like-err");
+      const btn = box.querySelector(".like");
+      if (!me) { $err.textContent = "내 ID를 입력하세요."; return; }
+      $err.textContent = "";
+      btn.disabled = true;
+      const wasLiked = isLiked(postId);
+      try {
+        await unwrap(await fetch(`/posts/${encodeURIComponent(postId)}/likes`, {
+          method: wasLiked ? "DELETE" : "POST",
+          headers: { "X-User-Id": me }
+        }));
+        setLiked(postId, !wasLiked);
+      } catch (e) {
+        if (e.status === 409) setLiked(postId, true);        // 서버 기준으로 이미 좋아요 상태
+        else if (e.status === 404) $err.textContent = "존재하지 않는 글이에요.";
+        else $err.textContent = e.message;
+      } finally {
+        btn.disabled = false;
+        await refreshLike(box);
+      }
+    }
+
+    $feed.addEventListener("click", (e) => {
+      const btn = e.target.closest("button.like");
+      if (btn) toggleLike(btn.closest(".post-actions"));
+    });
+    // 내 ID가 바뀌면 좋아요 표시(내가 눌렀는지)를 다시 그린다
+    $meId.addEventListener("change", () => $feed.querySelectorAll(".post-actions").forEach(refreshLike));
 
     $followBtn.addEventListener("click", () => callFollow("POST"));
     $unfollowBtn.addEventListener("click", () => callFollow("DELETE"));
