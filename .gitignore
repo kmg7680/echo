@@ -18,6 +18,12 @@ Thumbs.db
 # 환경별 설정 (머신마다 다른 절대경로 포함 — git 추적 제외)
 .claude/settings.local.json
 
+# 세션 인수인계 요약 (Stop 훅이 매 응답마다 덮어씀 — 세션 상태이므로 추적 제외)
+.claude/session-summary.md
+
 # 로그
 *.log
 logs/
+
+# IDE 컴파일 산출물
+bin/

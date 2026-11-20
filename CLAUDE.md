@@ -17,6 +17,7 @@ Java 25 · Spring Boot 3.5.x · Gradle 멀티프로젝트 · H2(인메모리) ·
 - `apps/customer-api` — HTTP 진입점(유일한 Spring Boot 실행 단위)
 - `modules/post` — Post 도메인
 - `modules/user` — User 도메인
+- `modules/follow` — Follow 도메인
 - `common` — 표준 응답/오류 record
 
 ## 핵심 규칙
