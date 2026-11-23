@@ -1,0 +1,16 @@
+package com.echo.api.moderation;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+/** POST /reports 요청 DTO. */
+public record CreateReportRequest(
+    @NotNull(message = "postId는 필수입니다.")
+    Long postId,
+
+    @NotBlank(message = "reason은 비어 있을 수 없습니다.")
+    @Size(max = 500, message = "reason은 500자를 초과할 수 없습니다.")
+    String reason
+) {
+}

@@ -1,0 +1,2 @@
+- [알려진 한계](known-limitations.md) — 인증 부재·X-User-Id 위조·defaultValue 1·역할 없음(Info 처리 기준)
+- [보안 관례·미해결 이슈](security-conventions.md) — 금칙어 적용 지점, 시크릿 주입, 오류 응답, 2026-11-23 미해결 목록

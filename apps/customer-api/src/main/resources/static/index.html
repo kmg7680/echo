@@ -160,6 +160,19 @@
       color: var(--danger);
     }
     .like-count { font-variant-numeric: tabular-nums; }
+    .report-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-left: 6px;
+    }
+    .report-btn:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+    .report-msg { margin-left: 8px; font-size: 13px; color: var(--accent); }
+    .report-msg.err { color: var(--danger); }
 
     .empty, .error {
       text-align: center;
@@ -280,6 +293,8 @@
               <span>♥</span>
               <span class="like-count">…</span>
             </button>
+            <button class="report-btn" data-post-id="${escapeHtml(String(p.postId))}">신고</button>
+            <span class="report-msg" role="status"></span>
           </div>
         </article>`;
       }).join("");
@@ -418,8 +433,47 @@
       }
     }
 
+    // ── 신고 ───────────────────────────────────────────────────────
+    // POST /reports {postId, reason} — 신고자는 "내 ID"(X-User-Id)
+    async function reportPost($btn) {
+      const postId = Number($btn.dataset.postId);
+      const $msg = $btn.parentElement.querySelector(".report-msg");
+      const reason = prompt("신고 사유를 입력하세요 (최대 500자)");
+      if (reason === null) return; // 취소
+      const trimmed = reason.trim();
+      if (!trimmed) {
+        $msg.textContent = "신고 사유를 입력해야 해요.";
+        $msg.classList.add("err");
+        return;
+      }
+      if (trimmed.length > 500) {
+        $msg.textContent = "신고 사유는 500자 이내로 입력하세요.";
+        $msg.classList.add("err");
+        return;
+      }
+      $btn.disabled = true;
+      try {
+        const res = await fetch("/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-User-Id": currentMe() },
+          body: JSON.stringify({ postId, reason: trimmed })
+        });
+        await unwrap(res);
+        $msg.textContent = "신고가 접수되었어요.";
+        $msg.classList.remove("err");
+      } catch (e) {
+        const friendly = { 404: "삭제됐거나 없는 게시물이에요.", 409: "이미 신고한 게시물이에요." }[e.status];
+        $msg.textContent = "신고 실패: " + (friendly || e.message);
+        $msg.classList.add("err");
+      } finally {
+        $btn.disabled = false;
+      }
+    }
+
     // 피드는 매번 새로 그려지므로 이벤트 위임으로 처리
     $feed.addEventListener("click", (e) => {
+      const $report = e.target.closest(".report-btn");
+      if ($report) { reportPost($report); return; }
       const $btn = e.target.closest(".like-btn");
       if ($btn) toggleLike($btn.dataset.postId);
     });

@@ -1,6 +1,7 @@
 package com.echo.api.post;
 
 import com.echo.common.ApiResponse;
+import com.echo.moderation.application.BannedWordQueryService;
 import com.echo.post.application.PostService;
 import com.echo.post.domain.Post;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * 글(Post) HTTP API 컨트롤러.
  * X-User-Id 헤더로 작성자를 식별한다 (인증은 15장에서 도입).
+ * post와 moderation 모듈을 잇는 조립 지점이기도 하다 — 금칙어 검사(400)는 여기서 수행한다.
  */
 @RestController
 @RequestMapping("/posts")
@@ -21,17 +23,24 @@ import org.springframework.web.server.ResponseStatusException;
 public class PostController {
 
     private final PostService postService;
+    private final BannedWordQueryService bannedWordQueryService;
 
-    public PostController(PostService postService) {
+    public PostController(PostService postService, BannedWordQueryService bannedWordQueryService) {
         this.postService = postService;
+        this.bannedWordQueryService = bannedWordQueryService;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "글 작성", description = "새 글을 작성합니다. X-User-Id 헤더로 작성자를 지정합니다.")
+    @Operation(summary = "글 작성", description = "새 글을 작성합니다. X-User-Id 헤더로 작성자를 지정합니다. 금칙어 포함 시 400.")
     public ApiResponse<PostResponse> createPost(
             @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId,
             @Valid @RequestBody CreatePostRequest request) {
+
+        // 금칙어 목록은 DB 관리(moderation). post 모듈은 moderation을 모르므로 여기서 막는다.
+        if (bannedWordQueryService.findContainedWord(request.content()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "금칙어가 포함되어 있어 등록할 수 없습니다.");
+        }
 
         Post post = postService.create(userId, request.content());
         return ApiResponse.ok(PostResponse.from(post), "글이 작성되었습니다.");
